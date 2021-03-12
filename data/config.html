@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>	
+	<title>Configuration - FastLED</title>
+	<meta charset="UTF-8">
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+	<style> 
+		body {
+			background-color: #202020;
+			color: white;
+			font-family:"Lucida Console", Monaco, monospace;
+		}
+        p:first-letter {
+            text-transform:capitalize;
+        }
+		.box{
+			max-width:1200px;
+			min-width:600px;
+			margin:auto;
+			margin-top:24px;
+			margin-bottom:24px;
+			padding:12px;
+			background:black;
+			border: 3px solid gray;
+			border-radius: 10px;
+		}
+        .slider {
+          -webkit-appearance: none;
+          width: 100%;
+          height: 16px;
+          background: #fffffff;
+          outline: none;
+          opacity: 0.8;
+          -webkit-transition: .2s;
+          transition: opacity .2s;
+        }
+
+        .slider:hover {
+          opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          background: #0075FF;
+          cursor: pointer;
+        }
+	</style>
+	<script type="application/javascript">
+		var Socket;
+		
+		function init() {
+			Socket = new WebSocket('ws://' + window.location.hostname + ':81/');
+			Socket.onmessage = function(event){
+				//console.log("received data : " + event.data);
+				var dataJson = JSON.parse(event.data);
+                var parameters = dataJson["parameters"];
+                if(parameters) {
+                    for (var i = 0; i < parameters.length; i++){
+                        var param = parameters[i];
+                        var paramHtml = "<p>" + param.id + " : \n";
+                        paramHtml += '<input id="' + param.id + '" type="' + param.htmlType + '"';
+                        if(param.htmlType.localeCompare("range") == 0) {
+                            paramHtml += ' class="slider"';
+                            paramHtml += ' min="' + param.min + '" max="' + param.max + '"';
+                            paramHtml += '" oninput="sendRangeData(this)"';
+                            paramHtml += ' value="' + param.value + '"';
+                        }
+                        if(param.htmlType.localeCompare("button") == 0) {
+                            paramHtml += '" onclick="sendButtonData(this)"';
+                            paramHtml += ' value="' + param.id + '"';
+                        }
+                        paramHtml +='/>';
+                        paramHtml += "</p>";
+                        document.getElementById("parameters").innerHTML += paramHtml;
+                    }
+                }
+			}
+		}
+		  	
+		function sendRangeData(objectCalling) {
+			var obj = {};
+			obj[objectCalling.id] = objectCalling.value;
+			var configJson = JSON.stringify(obj);
+			console.log("send config : " + configJson);
+			Socket.send(configJson);
+		}
+        
+        function sendButtonData(objectCalling) {
+			var obj = {};
+			obj[objectCalling.id] = 1;
+			var configJson = JSON.stringify(obj);
+			console.log("send config : " + configJson);
+			Socket.send(configJson);
+		}
+	</script>
+</head>
+<body onload="javascript:init()">
+	<div id="parameters" class="box">
+		
+	</div>
+</body>
+</html>
